@@ -2,43 +2,52 @@
  * Created by azamikramullah on 12/24/16.
  */
 
-
+/* Pull in node modules and configs*/
 var config = require("./config.json")
-var shippoToken = config.shippoToken;
-var slackClientId= config.slackClient;
-var slackSecret= config.slackSecret;
 var express = require('express');
 var https = require('https');
 var bodyParser = require('body-parser');
 var moment = require('moment');
 var request = require('request');
 var mongoose = require('mongoose');
+/************************************/
+
+/* Set config data pulled from JSON file */
+var shippoToken = config.shippoToken;
+var slackClientId= config.slackClient;
+var slackSecret= config.slackSecret;
+/*****************************************/
+
+/* Setup mLab Connection and token schema */
 mongoose.connect(config.mongoUrl);
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
-    console.log("we're connected!");
+    console.log("Connected to mLab database");
 });
-moment().format();
-var app = express();
-
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
-app.use(bodyParser.json());
-
 var tokenSchema = mongoose.Schema({
     team: String,
     token: String
 });
 var token = mongoose.model('token', tokenSchema);
+/*************************/
+
+/* Setup Express and Moment */
+moment().format();
+var app = express();
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+app.use(bodyParser.json());
+/****************************/
+
 
 app.post('/package/status',function (req,res) {
     console.log("Webhook callback initiated. There is some status update");
     console.log(req.body);
-    //var metaData = req.body.metadata.split(",");
-    var userId = "U1W54LMNZ";//metaData[0];
-    var teamId = "T1W55134P";//metaData[1];
+    var metaData = req.body.metadata.split(",");
+    var userId = metaData[0];
+    var teamId = metaData[1];
     var botToken;
 
     token.findOne({team: teamId}, function(err,doc){
@@ -101,7 +110,7 @@ app.post('/notification', function(req,res){
     request({
         url: "https://api.goshippo.com/tracks/",
         method: "POST",
-        json: true,   // <--Very important!!!
+        json: true,
         headers:{Authorization:"ShippoToken " + shippoToken},
         body: postData
     }, function (error, response, body){
@@ -178,8 +187,8 @@ function getAttachments(history){
         }
 
         attachment.fields.push({
-            title:"Date",
-            value: moment(history[x].status_date).format('MMMM Do YYYY, h:mm a'),
+            title:"When",
+            value: moment(history[x].status_date).fromNow(),
             short:true
         })
         attachments.push(attachment);
@@ -189,28 +198,17 @@ function getAttachments(history){
 
 function sendStatusUpdate(botToken, userId, update){
     var channelId;
-    var attatchment;
-    var postData = {};
+    var attachment;
     request({
         url: "https://slack.com/api/im.open?token="+botToken+"&user=" +userId,
         method: "GET",
         json: true   // <--Very important!!!
     }, function (error, response, body){
-        console.log(response.statusCode);
-        console.log(body);
         channelId = body["channel"]["id"];
-        console.log(channelId);
-        attatchment = getAttachments([update.tracking_status]);
-        postData.attachments = attatchment;
-        console.log(attatchment);
-        console.log(JSON.stringify(attatchment));
-        postData.text = "Your package (" +update.tracking_number + ") is on the move, here's the latest!";
-        postData.token = botToken;
-        postData.channel = channelId;
-        postData.as_user=false;
-        postData.icon_emoji=":package:";
+        attachment = getAttachments([update.tracking_status]);
+        var textUpdate = "Your package (" +update.tracking_number + ") is on the move, here's the latest!";
         request({
-            url: "https://slack.com/api/chat.postMessage?token=" +botToken+"&channel=" + channelId+"&text="+postData.text+ "&attachments="+JSON.stringify(attatchment)+
+            url: "https://slack.com/api/chat.postMessage?token=" +botToken+"&channel=" + channelId+"&text="+textUpdate+ "&attachments="+JSON.stringify(attachment)+
             "&as_user=false&icon_emoji=:package:",
             method: "GET",
             json: true,
