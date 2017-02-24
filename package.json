@@ -1,7 +1,7 @@
 {
   "name": "trackr",
   "version": "1.0.0",
-  "description": "",
+  "description": "Slack app for tracking and receiving updates on packages",
   "main": "app.js",
   "author": "Azam Ikramullah",
   "license": "ISC",
