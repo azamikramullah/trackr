@@ -94,7 +94,7 @@ app.post('/notification', function(req,res){
         postData.carrier = "usps";
     } else if(req.body.text.substring(0,2) == '1Z'){
         postData.carrier = "ups";
-    } else if(req.body.text.length == 12 || req.body.text.length == 15){
+    } else if(req.body.text.length == 12 || req.body.text.length == 15 || req.body.text.length == 20){
         postData.carrier = "fedex";
     } else if(req.body.text == ""){
         res.send("Hey there neighbor! Go ahead and give me a UPS, USPS or FedEx tracking number and I'll notify you when the status changes!!");
@@ -135,7 +135,7 @@ app.post('/package', function (req, res) {
         options.path += "usps/";
     } else if(req.body.text.substring(0,2) == '1Z'){
         options.path += "ups/";
-    } else if(req.body.text.length == 12 || req.body.text.length == 15){
+    } else if(req.body.text.length == 12 || req.body.text.length == 15 || req.body.text.length == 20){
         options.path += "fedex/";
     } else if(req.body.text == ""){
         res.send("Hey there neighbor! Go ahead and give me a UPS, USPS or FedEx tracking number and I'll try to track it for you!");
